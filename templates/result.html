@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Review &middot; Conversion Pipeline{% endblock %}
+{% block content %}
+
+<ol class="pipeline">
+  <li class="pipeline-step is-done">
+    <span class="pipeline-num">01</span>
+    <span class="pipeline-label">Upload</span>
+  </li>
+  <li class="pipeline-step is-active">
+    <span class="pipeline-num">02</span>
+    <span class="pipeline-label">Review</span>
+  </li>
+  <li class="pipeline-step {% if has_designation %}is-done{% endif %}">
+    <span class="pipeline-num">03</span>
+    <span class="pipeline-label">Download</span>
+  </li>
+</ol>
+
+<section class="card">
+  <h1>Converted output</h1>
+  <div class="stat-row">
+    <div class="stat"><span class="stat-num">{{ meta.n_rows }}</span><span class="stat-label">rows</span></div>
+    <div class="stat"><span class="stat-num">{{ meta.n_cols }}</span><span class="stat-label">columns</span></div>
+    <div class="stat"><span class="stat-num">{{ meta.warnings|length }}</span><span class="stat-label">warnings</span></div>
+  </div>
+
+  {% if meta.warnings %}
+  <details class="warnings">
+    <summary>{{ meta.warnings|length }} warning(s)</summary>
+    <ul>
+      {% for w in meta.warnings %}<li>{{ w }}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>{% for c in preview_cols %}<th>{{ c }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        {% for row in preview_rows %}
+        <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small">Showing first {{ preview_rows|length }} of {{ meta.n_rows }} rows.</p>
+
+  <a class="btn btn-primary" href="{{ url_for('download_main', token=token) }}">Download converted CSV</a>
+</section>
+
+<section class="card">
+  <h2>Optional &mdash; Designation Change file</h2>
+  <p class="muted">Builds a second file: <code>AgentCode | DesignationMap | DesignationMappingDate | MappingStatus_designationchange(Active)</code>.</p>
+
+  <form action="{{ url_for('designation', token=token) }}" method="post" class="form">
+    <div class="field">
+      <label for="agent_code_column">Column to use as <code>AgentCode</code></label>
+      <select id="agent_code_column" name="agent_code_column">
+        {% for c in columns %}
+        <option value="{{ c }}" {% if c == guessed_agent %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>DesignationMap value</label>
+      <div class="radio-row">
+        <label class="radio"><input type="radio" name="designation_mode" value="column" {% if guessed_designation %}checked{% endif %}> use a column from the output</label>
+        <label class="radio"><input type="radio" name="designation_mode" value="fixed" {% if not guessed_designation %}checked{% endif %}> use a fixed value</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="designation_source">Column</label>
+      <select id="designation_source" name="designation_source">
+        {% for c in columns %}
+        <option value="{{ c }}" {% if c == guessed_designation %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="designation_fixed_value">Fixed value</label>
+      <input type="text" id="designation_fixed_value" name="designation_fixed_value" value="RC" placeholder="e.g. RC">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="mapping_date">DesignationMappingDate</label>
+        <input type="date" id="mapping_date" name="mapping_date" value="{{ today }}">
+      </div>
+      <div class="field">
+        <label for="status_value">MappingStatus</label>
+        <select id="status_value" name="status_value">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-secondary">Generate designation change file</button>
+  </form>
+
+  {% if designation_preview %}
+  <div class="table-scroll" style="margin-top:1.25rem;">
+    <table class="data-table">
+      <thead>
+        <tr>{% for c in designation_preview.cols %}<th>{{ c }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        {% for row in designation_preview.rows %}
+        <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="btn-row">
+    <a class="btn btn-primary" href="{{ url_for('download_designation', token=token) }}">Download designation change (.xlsx)</a>
+    <a class="btn btn-outline" href="{{ url_for('download_zip', token=token) }}">Download both (.zip)</a>
+  </div>
+  {% endif %}
+</section>
+
+<a class="link-back" href="{{ url_for('index') }}">&larr; convert another file</a>
+
+<script>
+  (function () {
+    var radios = document.querySelectorAll('input[name="designation_mode"]');
+    var colField = document.getElementById('designation_source').closest('.field');
+    var fixedField = document.getElementById('designation_fixed_value').closest('.field');
+    function sync() {
+      var checked = document.querySelector('input[name="designation_mode"]:checked');
+      var mode = checked ? checked.value : 'column';
+      colField.style.display = mode === 'column' ? '' : 'none';
+      fixedField.style.display = mode === 'fixed' ? '' : 'none';
+    }
+    radios.forEach(function (r) { r.addEventListener('change', sync); });
+    sync();
+  })();
+</script>
+
+{% endblock %}

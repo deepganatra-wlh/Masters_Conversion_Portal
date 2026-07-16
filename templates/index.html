@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Upload &middot; Conversion Pipeline{% endblock %}
+{% block content %}
+
+<ol class="pipeline">
+  <li class="pipeline-step is-active">
+    <span class="pipeline-num">01</span>
+    <span class="pipeline-label">Upload</span>
+  </li>
+  <li class="pipeline-step">
+    <span class="pipeline-num">02</span>
+    <span class="pipeline-label">Review</span>
+  </li>
+  <li class="pipeline-step">
+    <span class="pipeline-num">03</span>
+    <span class="pipeline-label">Download</span>
+  </li>
+</ol>
+
+<section class="card">
+  <h1>Convert a file</h1>
+  <p class="muted">Upload a column-mapping JSON and a base CSV/Excel file. The mapping decides which source columns become which output columns &mdash; nothing is guessed at this stage.</p>
+
+  <form action="{{ url_for('convert') }}" method="post" enctype="multipart/form-data" class="form">
+    <div class="field">
+      <label for="mapping_file">Column mapping <code>.json</code></label>
+      <input type="file" id="mapping_file" name="mapping_file" accept=".json" required>
+    </div>
+
+    <div class="field">
+      <label for="base_file">Base file <code>.csv</code> / <code>.xlsx</code> / <code>.xls</code></label>
+      <input type="file" id="base_file" name="base_file" accept=".csv,.xlsx,.xls" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Run conversion &rarr;</button>
+  </form>
+</section>
+
+<section class="card card-quiet">
+  <h2>Mapping JSON reference</h2>
+  <p class="muted">Each entry in <code>columns</code> supports:</p>
+  <ul class="spec-list">
+    <li><code>source_column</code> / <code>target_column</code> &mdash; rename a field</li>
+    <li><code>datatype</code> &mdash; <code>string</code>, <code>integer</code>, <code>float</code>, or <code>date</code></li>
+    <li><code>transformation</code> &mdash; <code>prepend</code>, <code>static</code>, or <code>conditional_value</code></li>
+  </ul>
+</section>
+
+{% endblock %}
