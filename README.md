@@ -97,9 +97,36 @@ Visit `http://localhost:5000`.
 - `app.config["MAX_CONTENT_LENGTH"]` in `app.py` caps uploads at 20 MB;
   raise/lower it to match what you expect to upload.
 
-## Mapping JSON format (unchanged)
+## Mapping JSON format
 
 Each entry in `columns` supports `source_column`, `target_column`,
 `datatype` (`string` / `integer` / `float` / `date`), and optional
-`transformation` (`prepend`, `static`, `conditional_value`) — identical to
-the original `converter.py` script.
+`transformation` (`prepend`, `static`, `conditional_value`, `value_map`).
+
+### `value_map` (swap specific values for other values)
+
+Use this when certain cell values need to become different values on
+output — e.g. codes to labels, old designations to new ones.
+
+```json
+{
+  "source_column": "Gender",
+  "target_column": "Gender",
+  "datatype": "string",
+  "transformation": "value_map",
+  "value_map": {
+    "M": "Male",
+    "F": "Female"
+  },
+  "unmapped": "keep"
+}
+```
+
+- `value_map` — dictionary of exact source value → replacement value.
+  Matching is done on the string value *after* the `datatype` conversion
+  (so for a `string` column, whitespace-trimmed values).
+- `unmapped` — what happens to a value that isn't in `value_map`:
+  - `"keep"` (default) — leave the original value as-is
+  - `"blank"` — output an empty string
+  - any other string — used as a literal fallback value, e.g.
+    `"unmapped": "OTHER"`
