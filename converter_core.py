@@ -102,6 +102,23 @@ class ExcelConverter:
                 mask = pd.Series([False] * len(result), index=result.index)
 
             result = mask.map({True: true_value, False: false_value})
+        elif transformation == "value_map":
+            value_map = config.get("value_map", {}) or {}
+            unmapped = config.get("unmapped", "keep")
+            str_result = result.astype(str)
+
+            mapped = str_result.map(value_map)
+            is_unmapped = mapped.isna()
+
+            if unmapped == "keep":
+                fallback = str_result
+            elif unmapped == "blank":
+                fallback = pd.Series([""] * len(result), index=result.index)
+            else:
+                # any other string is treated as a literal fallback value
+                fallback = pd.Series([str(unmapped)] * len(result), index=result.index)
+
+            result = mapped.where(~is_unmapped, fallback)
 
         return result
 
